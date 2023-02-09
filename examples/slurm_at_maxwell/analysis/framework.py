@@ -50,7 +50,7 @@ class SlurmWorkflow(law.slurm.SlurmWorkflow):
     """
 
     slurm_partition = luigi.Parameter(
-        default="cms-uhh",
+        default="allcpu",
         significant=False,
         description="target queue partition; default: cms-uhh",
     )

@@ -5,10 +5,11 @@ Law example tasks to demonstrate Slurm workflows at the Desy Maxwell cluster.
 
 The actual payload of the tasks is rather trivial.
 """
-
+import time
 
 import six
 import law
+import luigi
 
 
 # import our "framework" tasks
@@ -32,13 +33,18 @@ class CreateChars(Task, SlurmWorkflow, law.LocalWorkflow):
     single *branch task* rather than the workflow. Branch tasks are always executed locally.
     """
 
+    uppercase = luigi.BoolParameter(default=False)
+
     def create_branch_map(self):
-        # map branch indexes to ascii numbers from 97 to 122 ("a" to "z")
-        return {i: num for i, num in enumerate(range(97, 122 + 1))}
+        # map branch indexes to ascii numbers from 65 to 90 and 97 to 122 ("A/a" to "Z/z")
+        if self.uppercase:
+            return {i: num for i, num in enumerate(range(65, 90 + 1))}
+        else:
+            return {i: num for i, num in enumerate(range(97, 122 + 1))}
 
     def output(self):
         # it's best practice to encode the branch number into the output target
-        return self.local_target("output_{}.json".format(self.branch))
+        return self.local_target("output_{}_{}.json".format(self.uppercase, self.branch))
 
     def run(self):
         # the branch data holds the integer number to convert
@@ -46,6 +52,8 @@ class CreateChars(Task, SlurmWorkflow, law.LocalWorkflow):
 
         # actual payload: convert to char
         char = chr(num)
+
+        time.sleep(300)  # Make it take some time
 
         # use target formatters (implementing dump and load, based on the file extension)
         # to write the output target
@@ -59,6 +67,8 @@ class CreateAlphabet(Task):
     alphabet into a text file.
     """
 
+    uppercase = CreateChars.uppercase
+
     def requires(self):
         # req() is defined on all tasks and handles the passing of all parameter values that are
         # common between the required task and the instance (self)
@@ -68,7 +78,7 @@ class CreateAlphabet(Task):
 
     def output(self):
         # output a plain text file
-        return self.local_target("alphabet.txt")
+        return self.local_target("ALPHABET.txt" if self.uppercase else "alphabet.txt")
 
     def run(self):
         # since we require the workflow and not the branch tasks (see above), self.input() points
